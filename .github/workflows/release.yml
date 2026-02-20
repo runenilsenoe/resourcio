@@ -24,7 +24,10 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        run: xcodegen generate
+        run: |
+          rm -rf Resourcio.xcodeproj
+          xcodegen generate --spec project.yml
+          grep -m1 "objectVersion" Resourcio.xcodeproj/project.pbxproj
 
       - name: Import signing certificate
         env:

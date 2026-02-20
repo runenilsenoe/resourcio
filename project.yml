@@ -1,6 +1,7 @@
 name: Resourcio
 options:
   minimumXcodeGenVersion: 2.38.0
+  xcodeVersion: "15.4"
 settings:
   base:
     SWIFT_VERSION: 6.0
