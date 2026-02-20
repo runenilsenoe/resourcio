@@ -1,15 +1,19 @@
-name: Release DMG
+name: Release DMG (Signed)
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      enable_signed_release:
+        description: "Set to true to run signed/notarized release"
+        required: true
+        default: "false"
 
 permissions:
   contents: write
 
 jobs:
   build-sign-notarize:
+    if: ${{ github.event.inputs.enable_signed_release == 'true' }}
     runs-on: macos-14
 
     steps:
@@ -30,11 +34,21 @@ jobs:
         run: |
           CERT_PATH="$RUNNER_TEMP/cert.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
-          echo -n "$SIGNING_CERT_BASE64" | base64 --decode -o "$CERT_PATH"
+          [[ -n "$SIGNING_CERT_BASE64" ]] || { echo "SIGNING_CERT_BASE64 is empty"; exit 1; }
+          [[ -n "$SIGNING_CERT_PASSWORD" ]] || { echo "SIGNING_CERT_PASSWORD is empty"; exit 1; }
+          [[ -n "$KEYCHAIN_PASSWORD" ]] || { echo "KEYCHAIN_PASSWORD is empty"; exit 1; }
+
+          # Decode base64 in a macOS-compatible way.
+          echo "$SIGNING_CERT_BASE64" | base64 -D > "$CERT_PATH"
+          [[ -s "$CERT_PATH" ]] || { echo "Decoded cert file is empty"; exit 1; }
+
+          # Validate the p12/password pair before importing into keychain.
+          openssl pkcs12 -in "$CERT_PATH" -passin "pass:$SIGNING_CERT_PASSWORD" -nokeys -clcerts >/dev/null
+
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERT_PATH" -P "$SIGNING_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$SIGNING_CERT_PASSWORD" -f pkcs12 -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/security
           security list-keychain -d user -s "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 

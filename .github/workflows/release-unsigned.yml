@@ -1,0 +1,56 @@
+name: Release DMG (Unsigned)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-unsigned-dmg:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned app
+        run: |
+          xcodebuild \
+            -project Resourcio.xcodeproj \
+            -scheme Resourcio \
+            -configuration Release \
+            -derivedDataPath dist/DerivedData \
+            build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Verify app exists
+        run: |
+          test -d "dist/DerivedData/Build/Products/Release/Resourcio.app"
+
+      - name: Build unsigned DMG
+        run: |
+          mkdir -p dist/dmg-stage
+          cp -R dist/DerivedData/Build/Products/Release/Resourcio.app dist/dmg-stage/
+          ln -s /Applications dist/dmg-stage/Applications
+          hdiutil create \
+            -volname "Resourcio" \
+            -srcfolder dist/dmg-stage \
+            -ov \
+            -format UDZO \
+            dist/Resourcio-unsigned.dmg
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Resourcio-unsigned.dmg
