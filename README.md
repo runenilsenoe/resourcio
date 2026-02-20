@@ -1,4 +1,4 @@
-# Resourcio
+# Resourcio - A super simple task bar resource manager
 
 Native macOS menu bar app that shows the top 5 consumer apps currently impacting user experience, scored as a weighted percentage out of 100.
 
