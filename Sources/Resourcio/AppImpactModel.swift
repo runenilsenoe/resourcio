@@ -17,6 +17,7 @@ struct WorkloadClassification {
 struct AppImpact: Identifiable {
     let id: pid_t
     let name: String
+    let bundleIdentifier: String?
     let score: Double
     let cpuImpact: Double
     let cpuSustainedImpact: Double
@@ -57,6 +58,7 @@ struct AggregatedProcessUsage {
 struct CandidateApp {
     let pid: pid_t
     let name: String
+    let bundleIdentifier: String?
     let isFrontmost: Bool
     let matchTokens: [String]
 }

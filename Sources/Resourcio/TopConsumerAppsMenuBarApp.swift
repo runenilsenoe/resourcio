@@ -131,6 +131,11 @@ struct TopConsumerAppsMenuBarApp: App {
             lines.append("Observed child commands: \(app.childCommandHints.joined(separator: ", "))")
         }
 
+        let appSpecificLines = AppSpecificTooltipRegistry.tooltipLines(for: app)
+        if !appSpecificLines.isEmpty {
+            lines.append(contentsOf: appSpecificLines)
+        }
+
         return lines.joined(separator: "\n")
     }
 }

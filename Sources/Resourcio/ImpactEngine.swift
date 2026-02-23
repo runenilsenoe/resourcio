@@ -234,6 +234,7 @@ final class AppImpactStore: ObservableObject {
             AppImpact(
                 id: ownPID,
                 name: "Initializing",
+                bundleIdentifier: nil,
                 score: 0,
                 cpuImpact: 0,
                 cpuSustainedImpact: 0,
@@ -312,6 +313,7 @@ final class AppImpactStore: ObservableObject {
                 return AppImpact(
                     id: app.pid,
                     name: app.name,
+                    bundleIdentifier: app.bundleIdentifier,
                     score: app.isFrontmost ? 2.0 : 1.0,
                     cpuImpact: 0,
                     cpuSustainedImpact: 0,
@@ -380,6 +382,7 @@ final class AppImpactStore: ObservableObject {
             return AppImpact(
                 id: app.pid,
                 name: app.name,
+                bundleIdentifier: app.bundleIdentifier,
                 score: total,
                 cpuImpact: cpuNow,
                 cpuSustainedImpact: cpuSustained,
@@ -436,6 +439,7 @@ final class AppImpactStore: ObservableObject {
             return CandidateApp(
                 pid: app.processIdentifier,
                 name: app.localizedName ?? fallbackName ?? "PID \(app.processIdentifier)",
+                bundleIdentifier: app.bundleIdentifier,
                 isFrontmost: app.processIdentifier == frontmostPID,
                 matchTokens: Array(tokenSet).filter { $0.count >= 3 }
             )
