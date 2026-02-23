@@ -6,15 +6,24 @@ Native macOS menu bar app that shows the top 5 consumer apps currently impacting
 
 - Tracks running GUI apps and ranks the top 5 by impact.
 - Shows each app on one line with total impact %, CPU %, and memory %.
-- Adds badges: `SPIKE`, `TABS`, `AI`.
+- Aggregates descendant/child process usage under each app root PID.
+- Adds badges: `SPIKE`, `TABS`.
 - Updates every `500ms`.
-- On mouseover, shows a quick explanation of why that app is using resources.
+- On mouseover, shows workload classification + confidence + observed signals.
+- Workload classes:
+- `Idle`
+- `Indexing`
+- `Build`
+- `AI-Assisted Editing`
+- `Background Analysis`
 
 ## Scoring (High Level)
 
-- `60%` CPU impact
-- `30%` memory impact
-- `10%` foreground (active app) boost
+- `35%` current CPU load
+- `25%` sustained CPU load
+- `20%` memory pressure
+- `10%` memory growth trend
+- `10%` foreground responsiveness signal
 - `+12` for sustained CPU spike
 - `+8` for tab-like memory pressure
 

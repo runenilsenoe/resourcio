@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:resourcio}",
+            "name": "Debug Resourcio",
+            "target": "Resourcio",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Resourcio"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:resourcio}",
+            "name": "Release Resourcio",
+            "target": "Resourcio",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Resourcio"
+        }
+    ]
+}

@@ -1,33 +1,37 @@
 import Foundation
 
+enum WorkloadState: String, CaseIterable {
+    case idle = "Idle"
+    case indexing = "Indexing"
+    case build = "Build"
+    case aiAssistedEditing = "AI-Assisted Editing"
+    case backgroundAnalysis = "Background Analysis"
+}
+
+struct WorkloadClassification {
+    let state: WorkloadState
+    let confidence: Double
+    let reasons: [String]
+}
+
 struct AppImpact: Identifiable {
     let id: pid_t
     let name: String
     let score: Double
     let cpuImpact: Double
+    let cpuSustainedImpact: Double
     let memoryImpact: Double
+    let rawMemoryPercent: Double
+    let memoryGrowthImpact: Double
     let rawCPUPercent: Double
     let residentGB: Double
     let isFrontmost: Bool
+    let hasTelemetry: Bool
     let hasSustainedCPUSpike: Bool
     let hasTabLikeMemoryPressure: Bool
-    let isIntelliJFamily: Bool
-    let hasLikelyAIActivity: Bool
-    let aiActivityScore: Double
-    let aiInferencePercent: Double
-    let aiRetrievalPercent: Double
-    let aiEmbeddingPercent: Double
-    let aiGenerationPercent: Double
-    let aiCachePercent: Double
-}
-
-struct IntelliJAIBreakdown {
-    let totalPercent: Double
-    let inferencePercent: Double
-    let retrievalPercent: Double
-    let embeddingPercent: Double
-    let generationPercent: Double
-    let cachePercent: Double
+    let childProcessCount: Int
+    let childCommandHints: [String]
+    let workload: WorkloadClassification
 }
 
 struct ProcessUsage {
@@ -35,42 +39,54 @@ struct ProcessUsage {
     let residentBytes: Double
 }
 
+struct ProcessSample {
+    let pid: pid_t
+    let ppid: pid_t
+    let cpuPercent: Double
+    let residentBytes: Double
+    let command: String
+}
+
+struct AggregatedProcessUsage {
+    let cpuPercent: Double
+    let residentBytes: Double
+    let processCount: Int
+    let commands: Set<String>
+}
+
 struct CandidateApp {
     let pid: pid_t
     let name: String
     let isFrontmost: Bool
+    let matchTokens: [String]
 }
 
 enum ImpactTuning {
     static let refreshIntervalMs: UInt64 = 500
-    static let historyLimit = 8
+    static let telemetryCollectionIntervalMs: UInt64 = 2000
+    static let historyLimit = 24
     static let topAppCount = 5
+    static let minimumVisibleImpact = 1.0
 
-    static let cpuNormalizationDivisor = 2.0
-    static let memoryScaleMultiplier = 4.0
+    static let memoryScaleMultiplier = 1.8
 
-    static let cpuWeight = 0.60
-    static let memoryWeight = 0.30
-    static let foregroundWeight = 0.10
+    static let cpuNowWeight = 0.35
+    static let cpuSustainedWeight = 0.25
+    static let memoryPressureWeight = 0.20
+    static let memoryGrowthWeight = 0.10
+    static let foregroundResponsivenessWeight = 0.10
 
     static let sustainedSpikePenalty = 12.0
     static let tabPressurePenalty = 8.0
-    static let aiBadgeThreshold = 0.55
 
     static let sustainedSpikeWindow = 4
-    static let sustainedSpikeAvgThreshold = 55.0
-    static let sustainedSpikePeakThreshold = 75.0
+    static let sustainedSpikeAvgThreshold = 40.0
+    static let sustainedSpikePeakThreshold = 65.0
 
-    static let tabPressureWindow = 4
-    static let tabPressureMemoryThreshold = 45.0
-    static let tabPressureCpuCeiling = 25.0
-    static let tabPressureGrowthThreshold = 0.12
+    static let tabPressureWindow = 8
+    static let tabPressureMemoryThreshold = 40.0
+    static let tabPressureCpuCeiling = 18.0
+    static let tabPressureGrowthThreshold = 0.10
 
-    static let aiWindow = 6
-    static let aiNoHistoryBaseline = 0.25
-    static let aiCpuNormDivisor = 70.0
-    static let aiBurstNormDivisor = 75.0
-    static let aiMemoryNormDivisor = 55.0
-    static let aiGrowthNormDivisor = 0.20
-    static let aiForegroundBoost = 0.20
+    static let classificationWindow = 10
 }

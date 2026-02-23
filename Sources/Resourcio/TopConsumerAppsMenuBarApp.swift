@@ -17,9 +17,11 @@ struct TopConsumerAppsMenuBarApp: App {
         MenuBarExtra {
             VStack(alignment: .leading, spacing: 8) {
                 if store.topApps.isEmpty {
-                    Text("No eligible apps found")
-                        .font(.callout)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("No eligible apps found")
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
                 } else {
                     ForEach(store.topApps) { app in
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -67,6 +69,9 @@ struct TopConsumerAppsMenuBarApp: App {
             }
             .padding(10)
             .frame(minWidth: 350, alignment: .leading)
+            .task {
+                store.start()
+            }
         } label: {
             Label("Top Apps", systemImage: "gauge.with.needle")
         }
@@ -74,9 +79,10 @@ struct TopConsumerAppsMenuBarApp: App {
     }
 
     private func details(for app: AppImpact) -> String {
+        let cpuDisplay = min(max(app.rawCPUPercent, 0), 100)
         var parts = [
-            "CPU \(Int(app.cpuImpact.rounded()))%",
-            "MEM \(Int(app.memoryImpact.rounded()))%",
+            "CPU \(Int(cpuDisplay.rounded()))%",
+            "MEM \(Int(app.rawMemoryPercent.rounded()))%",
         ]
 
         if app.hasSustainedCPUSpike {
@@ -87,15 +93,20 @@ struct TopConsumerAppsMenuBarApp: App {
             parts.append("TABS")
         }
 
-        if app.hasLikelyAIActivity {
-            parts.append("AI")
-        }
-
         return parts.joined(separator: "  ")
     }
 
     private func tooltip(for app: AppImpact) -> String {
-        var lines: [String] = []
+        var lines: [String] = [
+            "Workload: \(app.workload.state.rawValue) (\(Int((app.workload.confidence * 100).rounded()))% confidence)",
+            "Observed metrics: CPU now \(Int(app.cpuImpact.rounded()))%, CPU sustained \(Int(app.cpuSustainedImpact.rounded()))%",
+            "Memory share \(Int(app.rawMemoryPercent.rounded()))%, memory pressure \(Int(app.memoryImpact.rounded()))%, memory trend \(Int(app.memoryGrowthImpact.rounded()))%",
+            String(format: "Aggregated resident memory: %.2f GB across %d processes", app.residentGB, app.childProcessCount),
+        ]
+
+        if !app.hasTelemetry {
+            lines.append("Telemetry note: process-level metrics were unavailable on this refresh.")
+        }
 
         if app.isFrontmost {
             lines.append("Foreground boost: active app gets extra weight.")
@@ -109,37 +120,17 @@ struct TopConsumerAppsMenuBarApp: App {
             lines.append("TABS: high memory with low CPU and rising footprint.")
         }
 
-        if let appSpecificTooltip = AppSpecificInsights.tooltip(for: app) {
-            lines.append(appSpecificTooltip)
+        if !app.workload.reasons.isEmpty {
+            lines.append("Signals:")
+            for reason in app.workload.reasons {
+                lines.append("- \(reason)")
+            }
         }
 
-        lines.append("Likely workload: \(workloadHint(for: app.name)).")
+        if !app.childCommandHints.isEmpty {
+            lines.append("Observed child commands: \(app.childCommandHints.joined(separator: ", "))")
+        }
+
         return lines.joined(separator: "\n")
-    }
-
-    private func workloadHint(for appName: String) -> String {
-        let name = appName.lowercased()
-        let browserTokens = ["chrome", "safari", "firefox", "arc", "brave", "edge", "opera", "vivaldi"]
-        let videoTokens = ["zoom", "teams", "meet", "slack", "discord", "webex"]
-        let devTokens = ["xcode", "android studio", "cursor", "code", "intellij", "pycharm", "webstorm", "terminal", "iterm"]
-        let creativeTokens = ["photoshop", "premiere", "after effects", "figma", "final cut", "davinci", "lightroom"]
-
-        if browserTokens.contains(where: name.contains) {
-            return "browser rendering, tab scripts, extensions, and media decode"
-        }
-
-        if videoTokens.contains(where: name.contains) {
-            return "real-time video/audio encode-decode and network processing"
-        }
-
-        if devTokens.contains(where: name.contains) {
-            return "indexing, builds, language servers, and file watchers"
-        }
-
-        if creativeTokens.contains(where: name.contains) {
-            return "GPU/CPU-heavy media processing and large asset caching"
-        }
-
-        return "active UI work, background tasks, or cached data"
     }
 }
